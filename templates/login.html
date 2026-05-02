@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Login — Chinos Coffee{% endblock %}
+
+{% block head %}
+<style>
+  body {
+    background-image: url('/static/shopbg.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center" style="background:rgba(0,0,0,0.45);">
+  <div class="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-sm">
+    <div class="text-center mb-8">
+      <img src="/static/logo.jpg" alt="Chinos Coffee Logo"
+           class="w-24 h-24 object-contain mx-auto rounded-2xl mb-3"/>
+      <img src="/static/wordmark.jpg" alt="Chinos"
+           class="h-8 object-contain mx-auto mb-1"/>
+      <p class="text-cocoa/50 text-sm">POS Terminal</p>
+    </div>
+
+    {% if error %}
+    <div class="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-5">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="/login" class="space-y-4">
+      <div>
+        <label class="block text-cocoa text-sm font-semibold mb-1">Username</label>
+        <input name="username" type="text" required autofocus
+               class="w-full border border-cocoa/30 rounded-xl px-4 py-3 text-cocoa focus:outline-none focus:border-cocoa text-base"/>
+      </div>
+      <div>
+        <label class="block text-cocoa text-sm font-semibold mb-1">Password</label>
+        <input name="password" type="password" required
+               class="w-full border border-cocoa/30 rounded-xl px-4 py-3 text-cocoa focus:outline-none focus:border-cocoa text-base"/>
+      </div>
+      <button type="submit"
+              class="w-full bg-cocoa text-cream font-bold text-lg py-4 rounded-2xl hover:bg-cocoaDark transition-all mt-2">
+        Sign In
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

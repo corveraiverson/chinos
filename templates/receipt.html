@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Receipt {{ tx.order_number }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      width: 80mm;
+      margin: 0 auto;
+      padding: 8px;
+      background: #fff;
+      color: #000;
+    }
+    .center { text-align: center; }
+    .bold   { font-weight: bold; }
+    .divider { border-top: 1px dashed #000; margin: 6px 0; }
+    .row { display: flex; justify-content: space-between; }
+    .shop-name { font-size: 18px; font-weight: bold; letter-spacing: 1px; }
+    .total-row { font-size: 14px; font-weight: bold; }
+    @media print {
+      body { width: 80mm; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="center">
+    <img src="/static/logo.jpg" alt="Chinos Coffee" style="width:48px;height:48px;object-fit:contain;margin:0 auto 4px;display:block;"/>
+    <p class="shop-name">CHINOS COFFEE</p>
+    <p>Your Daily Brew</p>
+    <p>Tel: (02) 000-0000</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="row"><span>Order #:</span><span class="bold">{{ tx.order_number }}</span></div>
+  <div class="row"><span>Date:</span><span>{{ tx.timestamp.strftime('%b %d, %Y %I:%M %p') }}</span></div>
+  <div class="row"><span>Cashier:</span><span>{{ tx.cashier.username if tx.cashier else 'N/A' }}</span></div>
+  <div class="row"><span>Payment:</span><span>{{ tx.payment_method }}</span></div>
+
+  <div class="divider"></div>
+
+  <p class="bold" style="margin-bottom:4px;">ITEMS</p>
+  {% for item in items %}
+  <div class="row">
+    <span>{{ item.name }} x{{ item.qty }}</span>
+    <span>₱{{ "%.2f"|format(item.price * item.qty) }}</span>
+  </div>
+  {% endfor %}
+
+  <div class="divider"></div>
+
+  <div class="row total-row"><span>TOTAL</span><span>₱{{ "%.2f"|format(tx.total_amount) }}</span></div>
+  {% if tx.payment_method == 'Cash' %}
+  <div class="row"><span>Tendered</span><span>₱{{ "%.2f"|format(tx.amount_tendered) }}</span></div>
+  <div class="row bold"><span>Change</span><span>₱{{ "%.2f"|format(tx.change_given) }}</span></div>
+  {% endif %}
+
+  <div class="divider"></div>
+
+  <div class="center" style="margin-top:6px;">
+    <p>Thank you for visiting!</p>
+    <p>Please come again ☕</p>
+  </div>
+
+  <div class="no-print" style="text-align:center; margin-top:16px;">
+    <button onclick="window.print()"
+            style="background:#8B5E3C;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;">
+      🖨 Print
+    </button>
+    <button onclick="window.close()"
+            style="margin-left:8px;background:#eee;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;">
+      Close
+    </button>
+  </div>
+</body>
+</html>

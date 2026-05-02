@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — Chinos Coffee{% endblock %}
+
+{% block content %}
+<div class="min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-cocoa text-cream px-8 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img src="/static/logo.jpg" alt="Chinos Coffee" class="w-10 h-10 object-contain rounded-lg" style="filter:brightness(10);"/>
+      <div>
+        <img src="/static/wordmark.jpg" alt="Chinos" class="h-6 object-contain" style="filter:brightness(10);mix-blend-mode:screen;"/>
+        <p class="text-xs" style="color:#F3E5AB;opacity:0.6;">Admin Dashboard</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="text-sm" style="color:#F3E5AB;opacity:0.7;">{{ user.username }}</span>
+      <a href="/logout" class="text-sm px-4 py-2 rounded-xl transition-all" style="background:#F3E5AB33;">Logout</a>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-6 py-8 space-y-6">
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-6">
+      <div class="bg-white rounded-2xl p-6 shadow">
+        <p class="text-sm" style="color:#8B5E3C;opacity:0.5;">Total Sales {% if filter_date %}({{ filter_date }}){% else %}(Last 100){% endif %}</p>
+        <p class="text-cocoa font-bold text-3xl mt-1">₱{{ "%.2f"|format(total_sales) }}</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow">
+        <p class="text-sm" style="color:#8B5E3C;opacity:0.5;">Transactions {% if filter_date %}({{ filter_date }}){% else %}(Last 100){% endif %}</p>
+        <p class="text-cocoa font-bold text-3xl mt-1">{{ transactions|length }}</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow">
+        <p class="text-sm" style="color:#8B5E3C;opacity:0.5;">Menu Items (Total)</p>
+        <p class="text-cocoa font-bold text-3xl mt-1">{{ products|length }}</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-3">
+      <button onclick="showTab('transactions')" id="tab-btn-transactions"
+              class="admin-tab px-5 py-2 rounded-xl font-semibold text-sm bg-cocoa text-cream">Transactions</button>
+      <button onclick="showTab('menu')" id="tab-btn-menu"
+              class="admin-tab px-5 py-2 rounded-xl font-semibold text-sm border-2 border-cocoa text-cocoa hover:bg-cocoa hover:text-cream transition-all">Menu Management</button>
+      <button onclick="showTab('settings')" id="tab-btn-settings"
+              class="admin-tab px-5 py-2 rounded-xl font-semibold text-sm border-2 border-cocoa text-cocoa hover:bg-cocoa hover:text-cream transition-all">Settings</button>
+    </div>
+
+    <!-- ── Transactions Panel ── -->
+    <div id="panel-transactions">
+
+      <!-- Date filter -->
+      <form method="get" action="/admin" class="flex items-center gap-3 mb-4">
+        <input type="hidden" name="tab" value="transactions"/>
+        <input type="date" name="filter_date" value="{{ filter_date }}"
+               class="border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa"/>
+        <button type="submit" class="bg-cocoa text-cream px-4 py-2 rounded-xl text-sm font-semibold hover:bg-cocoaDark transition-all">Filter</button>
+        {% if filter_date %}
+        <a href="/admin" class="text-sm text-cocoa/50 hover:text-cocoa">Clear</a>
+        {% endif %}
+      </form>
+
+      <div class="bg-white rounded-2xl shadow overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead style="background:#F3E5AB80;">
+              <tr>
+                <th class="text-left px-4 py-3 text-cocoa/70 font-semibold">Order #</th>
+                <th class="text-left px-4 py-3 text-cocoa/70 font-semibold">Date & Time</th>
+                <th class="text-left px-4 py-3 text-cocoa/70 font-semibold">Items</th>
+                <th class="text-left px-4 py-3 text-cocoa/70 font-semibold">Payment</th>
+                <th class="text-right px-4 py-3 text-cocoa/70 font-semibold">Total</th>
+                <th class="text-center px-4 py-3 text-cocoa/70 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-cocoa/5">
+              {% for tx in transactions %}
+              <tr id="row-{{ tx.id }}" class="hover:bg-cream/30 transition-colors">
+                <td class="px-4 py-3 font-semibold text-cocoa">{{ tx.order_number }}</td>
+                <td class="px-4 py-3 text-cocoa/60">{{ tx.timestamp.strftime('%b %d, %Y %I:%M %p') }}</td>
+                <td class="px-4 py-3 text-cocoa/70">
+                  <button onclick="showDetail({{ tx.id }})" class="text-xs underline text-cocoa/50 hover:text-cocoa">
+                    {{ tx.items|length }} item(s)
+                  </button>
+                  <!-- hidden detail -->
+                  <div id="detail-{{ tx.id }}" class="hidden mt-1 space-y-0.5">
+                    {% for item in tx.items %}
+                    <p class="text-xs" style="color:#8B5E3C;">{{ item.name }} ×{{ item.qty }} — ₱{{ "%.2f"|format(item.price * item.qty) }}</p>
+                    {% endfor %}
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold
+                    {% if tx.payment_method == 'Cash' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                    {{ tx.payment_method }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right font-bold text-cocoa">₱{{ "%.2f"|format(tx.total_amount) }}</td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex gap-2 justify-center">
+                    <a href="/receipt/{{ tx.id }}" target="_blank"
+                       class="text-xs px-3 py-1 rounded-lg hover:bg-cocoa hover:text-cream transition-all" style="background:#8B5E3C1A;color:#8B5E3C;">
+                      Receipt
+                    </a>
+                    <button onclick="openVoid({{ tx.id }}, '{{ tx.order_number }}')"
+                            class="text-xs px-3 py-1 rounded-lg hover:bg-red-500 hover:text-white transition-all" style="background:#FEE2E2;color:#EF4444;">
+                      Void
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6" class="text-center py-10 text-cocoa/30">No transactions found.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Menu Management Panel ── -->
+    <div id="panel-menu" class="hidden space-y-6">
+
+      <!-- Add Product Form -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h3 class="text-cocoa font-bold text-lg mb-4">Add New Product</h3>
+        <form method="post" action="/admin/product/add" enctype="multipart/form-data" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <input name="name" placeholder="Product name" required
+                 class="border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa"/>
+          <select name="category" class="border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa">
+            {% for cat in categories %}<option>{{ cat }}</option>{% endfor %}
+          </select>
+          <input name="price" type="number" step="0.01" min="1" placeholder="Price (₱)" required
+                 class="border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa"/>
+          <select name="dot_color" class="border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa">
+            <option value="brown">Brown (Espresso)</option>
+            <option value="blue">Blue (Iced)</option>
+            <option value="red">Red (Hot)</option>
+            <option value="green">Green (Matcha)</option>
+            <option value="cream">Cream (Pastry)</option>
+          </select>
+          <select name="badge" class="border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa">
+            <option value="">No Badge</option>
+            <option value="Best Seller">Best Seller</option>
+            <option value="Flavor of the Month">Flavor of the Month</option>
+          </select>
+          <div class="flex flex-col gap-1">
+            <label class="text-cocoa/60 text-xs font-semibold">Product Image (optional)</label>
+            <input name="image" type="file" accept="image/*"
+                   class="border border-cocoa/30 rounded-xl px-3 py-1.5 text-cocoa text-xs focus:outline-none focus:border-cocoa"/>
+          </div>
+          <button type="submit" class="bg-cocoa text-cream font-semibold rounded-xl px-4 py-2 text-sm hover:bg-cocoaDark transition-all md:col-span-3">
+            + Add Product
+          </button>
+        </form>
+      </div>
+
+      <!-- Product List -->
+      <div class="bg-white rounded-2xl shadow overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead style="background:#F3E5AB80;">
+              <tr>
+                <th class="text-left px-4 py-3 text-cocoa/70 font-semibold">Name</th>
+                <th class="text-left px-4 py-3 text-cocoa/70 font-semibold">Category</th>
+                <th class="text-right px-4 py-3 text-cocoa/70 font-semibold">Price</th>
+                <th class="text-center px-4 py-3 text-cocoa/70 font-semibold">Status</th>
+                <th class="text-center px-4 py-3 text-cocoa/70 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-cocoa/5">
+              {% for p in products %}
+              <tr id="product-row-{{ p.id }}">
+                <td class="px-4 py-3 font-semibold text-cocoa">
+                  <div class="flex items-center gap-3">
+                    {% if p.image %}
+                    <img src="/static/products/{{ p.image }}" alt="{{ p.name }}"
+                         class="w-10 h-10 rounded-lg object-contain" style="background:#F3E5AB;"/>
+                    {% else %}
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:#F3E5AB;">
+                      <span class="dot-{{ p.dot_color }} inline-block w-4 h-4 rounded-full"></span>
+                    </div>
+                    {% endif %}
+                    <span>
+                      <span class="dot-{{ p.dot_color }} inline-block w-2 h-2 rounded-full mr-1"></span>
+                      {{ p.name }}
+                      {% if p.badge %}<span class="ml-1 text-[10px] bg-cocoa text-cream px-1.5 py-0.5 rounded-full">{{ p.badge }}</span>{% endif %}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-cocoa/60">{{ p.category }}</td>
+                <td class="px-4 py-3 text-right font-bold text-cocoa">₱{{ "%.0f"|format(p.price) }}</td>
+                <td class="px-4 py-3 text-center" id="status-{{ p.id }}">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold
+                    {% if p.is_available %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-500{% endif %}">
+                    {{ 'Available' if p.is_available else 'Unavailable' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex gap-2 justify-center">
+                    <button onclick="openEdit({{ p.id }}, '{{ p.name|e }}', '{{ p.category }}', {{ p.price }}, '{{ p.dot_color }}', '{{ p.badge or '' }}', '{{ p.image or '' }}')"
+                            class="text-xs px-3 py-1 rounded-lg border border-cocoa/30 text-cocoa hover:bg-cocoa hover:text-cream transition-all">
+                      Edit
+                    </button>
+                    <button onclick="toggleProduct({{ p.id }}, this)"
+                            class="text-xs px-3 py-1 rounded-lg border border-cocoa/30 text-cocoa hover:bg-cocoa hover:text-cream transition-all">
+                      {{ 'Disable' if p.is_available else 'Enable' }}
+                    </button>
+                    <button onclick="deleteProduct({{ p.id }}, '{{ p.name|e }}', this)"
+                            class="text-xs px-3 py-1 rounded-lg hover:bg-red-500 hover:text-white transition-all" style="background:#FEE2E2;color:#EF4444;">
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Settings Panel ── -->
+    <div id="panel-settings" class="hidden space-y-6">
+
+      <!-- Daily Earnings Widget -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-cocoa font-bold text-lg">Today's Earnings</h3>
+          <span class="text-xs text-cocoa/40">Updates every 30 seconds</span>
+        </div>
+        <p id="daily-total" class="text-cocoa font-bold text-4xl mt-1">Loading...</p>
+        <p id="daily-count" class="text-cocoa/50 text-sm mt-1"></p>
+      </div>
+
+      <!-- GCash Settings -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h3 class="text-cocoa font-bold text-lg mb-4">GCash Settings</h3>
+        <form method="post" action="/admin/settings" enctype="multipart/form-data" class="space-y-4">
+          <div>
+            <label class="block text-cocoa text-sm font-semibold mb-1">GCash Number</label>
+            <input name="gcash_number" type="text" placeholder="e.g. 09XX XXX XXXX"
+                   value="{{ settings.gcash_number or '' }}"
+                   class="w-full border border-cocoa/30 rounded-xl px-4 py-3 text-cocoa text-sm focus:outline-none focus:border-cocoa"/>
+          </div>
+          <div>
+            <label class="block text-cocoa text-sm font-semibold mb-1">GCash QR Code</label>
+            {% if settings.gcash_qr %}
+            <div class="mb-3">
+              <p class="text-xs text-cocoa/50 mb-2">Current QR:</p>
+              <img src="/static/{{ settings.gcash_qr }}" alt="GCash QR"
+                   class="w-40 h-40 object-contain rounded-xl border border-cocoa/20"/>
+            </div>
+            {% endif %}
+            <input name="gcash_qr" type="file" accept="image/*"
+                   class="w-full border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa"/>
+            <p class="text-xs text-cocoa/40 mt-1">Upload a new image to replace the current QR code.</p>
+          </div>
+          <button type="submit"
+                  class="bg-cocoa text-cream font-semibold px-6 py-3 rounded-xl hover:bg-cocoaDark transition-all">
+            Save Settings
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Void Modal ── -->
+<div id="void-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-3xl p-8 w-96 shadow-2xl">
+    <h3 class="text-cocoa font-bold text-xl mb-1">Void Transaction</h3>
+    <p id="void-order-label" class="text-sm mb-4" style="color:#8B5E3C;opacity:0.5;"></p>
+    <input id="void-reason" type="text" placeholder="Enter void reason" required
+           class="w-full border border-cocoa/30 rounded-xl px-4 py-3 text-cocoa focus:outline-none focus:border-cocoa mb-4"/>
+    <div class="flex gap-3">
+      <button onclick="submitVoid()"
+              class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-all">
+        Confirm Void
+      </button>
+      <button onclick="closeVoid()"
+              class="flex-1 border-2 border-cocoa text-cocoa font-bold py-3 rounded-xl hover:bg-cream transition-all">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Product Modal ── -->
+<div id="edit-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-3xl p-8 w-96 shadow-2xl">
+    <h3 class="text-cocoa font-bold text-xl mb-4">Edit Product</h3>
+    <form id="edit-form" method="post" enctype="multipart/form-data" class="space-y-3">
+      <input name="name" id="edit-name" placeholder="Product name" required
+             class="w-full border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa"/>
+      <select name="category" id="edit-category" class="w-full border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa">
+        {% for cat in categories %}<option>{{ cat }}</option>{% endfor %}
+      </select>
+      <input name="price" id="edit-price" type="number" step="0.01" min="1" placeholder="Price (₱)" required
+             class="w-full border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa"/>
+      <select name="dot_color" id="edit-dot" class="w-full border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa">
+        <option value="brown">Brown (Espresso)</option>
+        <option value="blue">Blue (Iced)</option>
+        <option value="red">Red (Hot)</option>
+        <option value="green">Green (Matcha)</option>
+        <option value="cream">Cream (Pastry)</option>
+      </select>
+      <select name="badge" id="edit-badge" class="w-full border border-cocoa/30 rounded-xl px-3 py-2 text-cocoa text-sm focus:outline-none focus:border-cocoa">
+        <option value="">No Badge</option>
+        <option value="Best Seller">Best Seller</option>
+        <option value="Flavor of the Month">Flavor of the Month</option>
+      </select>
+      <!-- current image preview -->
+      <div id="edit-img-preview" class="hidden">
+        <p class="text-xs text-cocoa/50 mb-1">Current image:</p>
+        <img id="edit-img-thumb" src="" alt="" class="h-20 object-contain rounded-lg" style="background:#F3E5AB;"/>
+      </div>
+      <div>
+        <label class="text-xs text-cocoa/50 font-semibold">Replace image (optional)</label>
+        <input name="image" type="file" accept="image/*"
+               class="w-full border border-cocoa/30 rounded-xl px-3 py-1.5 text-cocoa text-xs focus:outline-none focus:border-cocoa mt-1"/>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="flex-1 bg-cocoa text-cream font-bold py-3 rounded-xl hover:bg-cocoaDark transition-all">Save</button>
+        <button type="button" onclick="closeEdit()" class="flex-1 border-2 border-cocoa text-cocoa font-bold py-3 rounded-xl hover:bg-cream transition-all">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let voidTxId = null;
+
+  // ── Tab switching ─────────────────────────────────────────────────────────
+  function showTab(tab) {
+    ['transactions','menu','settings'].forEach(t => {
+      document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
+      const btn = document.getElementById('tab-btn-' + t);
+      btn.className = 'admin-tab px-5 py-2 rounded-xl font-semibold text-sm transition-all ' +
+        (t === tab ? 'bg-cocoa text-cream' : 'border-2 border-cocoa text-cocoa hover:bg-cocoa hover:text-cream');
+    });
+    if (tab === 'settings') fetchDailyTotal();
+  }
+
+  // Auto-open tab from URL param
+  const urlTab = new URLSearchParams(location.search).get('tab');
+  if (urlTab) showTab(urlTab);
+
+  // ── Daily earnings ────────────────────────────────────────────────────────
+  async function fetchDailyTotal() {
+    const res = await fetch('/api/daily-total');
+    const data = await res.json();
+    document.getElementById('daily-total').textContent = '₱' + data.total.toFixed(2);
+    document.getElementById('daily-count').textContent = data.count + ' transaction' + (data.count !== 1 ? 's' : '') + ' today';
+  }
+  setInterval(() => {
+    if (!document.getElementById('panel-settings').classList.contains('hidden')) fetchDailyTotal();
+  }, 30000);
+
+  // ── Transaction detail toggle ─────────────────────────────────────────────
+  function showDetail(id) {
+    const el = document.getElementById('detail-' + id);
+    el.classList.toggle('hidden');
+  }
+
+  // ── Void ──────────────────────────────────────────────────────────────────
+  function openVoid(id, orderNum) {
+    voidTxId = id;
+    document.getElementById('void-order-label').textContent = 'Order: ' + orderNum;
+    document.getElementById('void-reason').value = '';
+    document.getElementById('void-modal').classList.remove('hidden');
+  }
+
+  function closeVoid() {
+    document.getElementById('void-modal').classList.add('hidden');
+    voidTxId = null;
+  }
+
+  async function submitVoid() {
+    const reason = document.getElementById('void-reason').value.trim();
+    if (!reason) { alert('Please enter a void reason.'); return; }
+    const res = await fetch('/admin/void/' + voidTxId, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({reason}),
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('row-' + voidTxId).remove();
+      closeVoid();
+    } else {
+      alert('Void failed.');
+    }
+  }
+
+  // ── Toggle product availability ───────────────────────────────────────────
+  async function toggleProduct(id, btn) {
+    const res = await fetch('/admin/product/toggle/' + id, {method: 'POST'});
+    const data = await res.json();
+    if (data.success) {
+      const statusCell = document.getElementById('status-' + id);
+      if (data.is_available) {
+        statusCell.innerHTML = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Available</span>';
+        btn.textContent = 'Disable';
+      } else {
+        statusCell.innerHTML = '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-500">Unavailable</span>';
+        btn.textContent = 'Enable';
+      }
+    }
+  }
+
+  // ── Edit product ──────────────────────────────────────────────────────────
+  function openEdit(id, name, category, price, dot, badge, image) {
+    document.getElementById('edit-form').action = '/admin/product/edit/' + id;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-category').value = category;
+    document.getElementById('edit-price').value = price;
+    document.getElementById('edit-dot').value = dot;
+    document.getElementById('edit-badge').value = badge;
+    const preview = document.getElementById('edit-img-preview');
+    const thumb = document.getElementById('edit-img-thumb');
+    if (image) {
+      thumb.src = '/static/products/' + image;
+      preview.classList.remove('hidden');
+    } else {
+      preview.classList.add('hidden');
+    }
+    document.getElementById('edit-modal').classList.remove('hidden');
+  }
+
+  function closeEdit() {
+    document.getElementById('edit-modal').classList.add('hidden');
+  }
+
+  async function deleteProduct(id, name, btn) {
+    if (!confirm(`Delete "${name}" permanently? This cannot be undone.`)) return;
+    const res = await fetch('/admin/product/delete/' + id, {method: 'POST'});
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('product-row-' + id)?.remove();
+    } else {
+      alert('Delete failed.');
+    }
+  }
+</script>
+{% endblock %}

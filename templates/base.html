@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Chinos Coffee POS{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream:  '#F3E5AB',
+            cocoa:  '#8B5E3C',
+            cocoaDark: '#6B4423',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #F3E5AB; font-family: 'Segoe UI', sans-serif; }
+    .dot-blue   { background:#3B82F6; }
+    .dot-red    { background:#EF4444; }
+    .dot-brown  { background:#8B5E3C; }
+    .dot-green  { background:#22C55E; }
+    .dot-cream  { background:#D4B483; border:1px solid #8B5E3C; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen">
+  {% block content %}{% endblock %}
+</body>
+</html>
